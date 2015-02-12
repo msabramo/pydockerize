@@ -32,7 +32,13 @@ def pydockerize(ctx, requirements_file, tag, base_images=DEFAULT_BASE_IMAGES):
 
 def write_dockerfile(base_image):
     print('write_dockerfile: base_image = %r' % base_image)
-    with open('Dockerfile', 'w') as f:
+    filename = 'pydockerize_output/{base_image}/Dockerfile'.format(
+        base_image=base_image)
+    if not os.path.isdir(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+    print('write_dockerfile: Writing %s' % filename)
+
+    with open(filename, 'w+') as f:
         f.write(textwrap.dedent("""\
             # This Docker image takes care of doing `pip install -r requirements.txt`
             # For more details on this Docker image, see: https://registry.hub.docker.com/_/python/
