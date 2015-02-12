@@ -45,6 +45,17 @@ def write_dockerfile():
 
 def invoke_docker_build(tag):
     print('invoke_docker_build: tag = %r' % tag)
+    cmd = ['docker', 'build']
+    if tag:
+        cmd.append('-t')
+        cmd.append(tag)
+    cmd.append('.')
+    print('invoke_docker_build: Calling subprocess with cmd = %r' % cmd)
+    status = subprocess.call(cmd)
+    if status == 0:
+        print('Docker build succeeded.')
+    else:
+        print('Docker build failed with %d' % status)
 
 
 if __name__ == '__main__':
