@@ -1,6 +1,9 @@
 # pydockerize
 
-Make a Docker container from a Python app with a pip `requirements.txt` file
+Creates a Docker image from a Python app with a pip `requirements.txt` file
+
+Given a Python app with a `requirements.txt` file, you can trivially
+make it into a Docker image.
 
 # Usage examples
 
