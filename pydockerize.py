@@ -162,7 +162,7 @@ def build(ctx):
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
         tag_built = build_one(tag, base_image, base_images, filename)
-        tags_built.append(tag_built)
+        tags_built.append(tag_built or '<No tag>')
 
     click.secho('build: %d Docker build(s) succeeded: %s'
                 % (len(base_images), ', '.join(tags_built)),
@@ -198,11 +198,11 @@ def build_one(tag, base_image, base_images, filename):
                % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
-        click.secho('build_one: Docker build for %s succeeded.' % tag,
+        click.secho('build_one: Docker build for tag "%s" succeeded.' % tag,
                     fg='green')
         return tag
     else:
-        click.secho('build_one: Docker build for %s failed with %d'
+        click.secho('build_one: Docker build for tag "%s" failed with %d'
                     % (tag, status),
                     fg='red')
         raise click.Abort()
