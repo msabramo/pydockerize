@@ -97,7 +97,6 @@ def write_dockerfiles(ctx):
         filename = write_dockerfile(base_image, requirements_file,
                                     cmd, entrypoint)
         base_images_and_filenames.append((base_image, filename))
-        # yield base_image, filename
 
     ctx.obj['base_images_and_filenames'] = base_images_and_filenames
 
