@@ -10,7 +10,6 @@ import click
 
 
 DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
-DEFAULT_PYTHON_VERSIONS = ['2.7']
 
 
 @click.command()
@@ -53,8 +52,6 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
         python_versions = python_versions.split(',')
         base_images = ['python:%s-onbuild' % python_version
                        for python_version in python_versions]
-    else:
-        python_versions = DEFAULT_PYTHON_VERSIONS
 
     if cmd is not None and procfile is not None:
         raise Exception(
@@ -74,8 +71,6 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
     if tag:
         print('\nShowing Docker images for %s:\n' % tag)
         show_docker_images(tag)
-
-    print()
 
 
 def get_cmd_from_procfile(procfile):
