@@ -73,7 +73,7 @@ def invoke_docker_build(repo_and_tag, base_image, filename):
         if ':' in repo_and_tag:
             raise Exception("':' in tag not supported yet")
         tag = get_tag_from_base_image(base_image)
-        cmd.append('-t')
+        cmd.append('--tag')
         cmd.append(repo_and_tag + ':' + tag)
     cmd.append('--file')
     cmd.append(filename)
