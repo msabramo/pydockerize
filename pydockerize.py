@@ -140,6 +140,7 @@ def invoke_docker_build(repo_and_tag, base_image, filename):
         print('Docker build succeeded.')
     else:
         print('Docker build failed with %d' % status)
+        raise click.Abort()
 
 
 def show_docker_images(repo):
