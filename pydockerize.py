@@ -7,7 +7,7 @@ import textwrap
 import click
 
 
-DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
+DEFAULT_BASE_IMAGES = ['python:2.7']
 
 
 @click.group(chain=True)
@@ -32,7 +32,8 @@ DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
                    'the resulting image in case of success')
 @click.option('-r', '--requirement',
               'requirements_file', type=click.Path(exists=True),
-              default='requirements.txt')
+              default='requirements.txt',
+              help='pip requirements file with packages to install')
 @click.pass_context
 def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
                 base_images=None, python_versions=None):
@@ -51,19 +52,14 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
         python_versions = python_versions.split(',')
         base_images = get_base_images_from_python_versions(python_versions)
 
-    if cmd is not None and procfile is not None:
-        raise Exception('Cannot specify both --cmd and --procfile')
-
-    if cmd is None and procfile is None and os.path.exists('Procfile'):
-        procfile = open('Procfile')
-
-    if procfile:
-        cmd = get_cmd_from_procfile(procfile)
+    if tag is None:
+        tag = os.path.basename(os.getcwd()).lower()
 
     ctx.obj = {
         'base_images': base_images,
         'requirements_file': requirements_file,
         'cmd': cmd,
+        'procfile': procfile,
         'entrypoint': entrypoint,
         'tag': tag,
     }
@@ -77,12 +73,24 @@ def generate(ctx):
     base_images = ctx.obj['base_images']
     requirements_file = ctx.obj['requirements_file']
     cmd = ctx.obj['cmd']
+    procfile = ctx.obj['procfile']
     entrypoint = ctx.obj['entrypoint']
 
+    if cmd is not None and procfile is not None:
+        raise Exception('Cannot specify both --cmd and --procfile')
+
+    if cmd is None and procfile is None and os.path.exists('Procfile'):
+        procfile = open('Procfile')
+
+    if procfile:
+        cmd = get_cmd_from_procfile(procfile)
+        click.echo('generate: Got cmd from %s => %r' % (procfile.name, cmd))
+    else:
+        click.echo('generate: cmd = %r' % cmd)
+
+    click.echo('generate: entrypoint = %r' % entrypoint)
     click.echo('generate: base_images = %r' % base_images)
     click.echo('generate: requirements_file = %r' % requirements_file)
-    click.echo('generate: cmd = %r' % cmd)
-    click.echo('generate: entrypoint = %r' % entrypoint)
 
     base_images_and_filenames = []
 
@@ -113,24 +121,27 @@ def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
 
     with open(filename, 'w+') as f:
         f.write(textwrap.dedent("""\
-            # This Docker image takes care of doing:
-            #
-            #     pip install -r requirements.txt
-            #
-            # For more details on this Docker image, see:
-            # https://registry.hub.docker.com/_/python/
+            # This is a Dockerfile
+            # Dockerfile reference: https://docs.docker.com/reference/builder/
+
             FROM {base_image}
 
+            RUN mkdir -p /usr/src/app
+            WORKDIR /usr/src/app
+
+            # Install necessary Python packages from pip requirements file
+            # requirements files: http://bit.ly/pip-requirements-files
+            COPY {requirements_file} /usr/src/app/
+            RUN pip install -r {requirements_file}
+
             # This is so one can mount a volume from the host to give the
-            # container access to the host's current working directory.
+            # container access to the host's current working directory. E.g.:
             #
-            # E.g.:
-            #
-            #   - `docker run -v $(pwd):/host` from command-line
-            #         or
+            #   - `docker run -v $(pwd):/host` from command-line or ...
             #   - `volumes: [".:/host"]` in fig.yml
             WORKDIR /host
-        """.format(base_image=base_image)))
+        """.format(base_image=base_image,
+                   requirements_file=requirements_file)))
         if entrypoint:
             f.write("\nENTRYPOINT %s\n" % entrypoint)
         if cmd:
@@ -149,18 +160,31 @@ def build(ctx):
     tag = ctx.obj['tag']
     base_images = ctx.obj['base_images']
 
-    click.echo('build: tag = %r' % tag)
+    click.echo("build: tag = '%s'" % tag)
+
+    if no_dockerfiles_already_exist(base_images):
+        ctx.invoke(generate)
 
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
         tag_built = build_one(tag, base_image, base_images, filename)
-        tags_built.append(tag_built)
+        tags_built.append(tag_built or '<No tag>')
 
     click.secho('build: %d Docker build(s) succeeded: %s'
                 % (len(base_images), ', '.join(tags_built)),
                 fg='green')
 
     ctx.invoke(images)
+
+
+def no_dockerfiles_already_exist(base_images):
+    for base_image in base_images:
+        filename = get_filename_from_base_image(base_image, base_images)
+        if os.path.exists(filename):
+            return False
+
+    return True
+
 
 @pydockerize.command()
 @click.pass_context
@@ -186,15 +210,15 @@ def build_one(tag, base_image, base_images, filename):
         cmd.append('--file')
         cmd.append(filename)
     cmd.append('.')
-    click.echo('build_one: Calling subprocess with cmd = %r\n'
+    click.echo("build_one: Calling subprocess with cmd = '%s'\n"
                % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
-        click.secho('build_one: Docker build for %s succeeded.' % tag,
+        click.secho('build_one: Docker build for tag "%s" succeeded.' % tag,
                     fg='green')
         return tag
     else:
-        click.secho('build_one: Docker build for %s failed with %d'
+        click.secho('build_one: Docker build for tag "%s" failed with %d'
                     % (tag, status),
                     fg='red')
         raise click.Abort()
