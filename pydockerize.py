@@ -52,21 +52,11 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
         python_versions = python_versions.split(',')
         base_images = get_base_images_from_python_versions(python_versions)
 
-    if cmd is not None and procfile is not None:
-        raise Exception('Cannot specify both --cmd and --procfile')
-
-    if cmd is None and procfile is None and os.path.exists('Procfile'):
-        procfile = open('Procfile')
-
-    if procfile:
-        cmd = get_cmd_from_procfile(procfile)
-        click.echo('pydockerize: Got cmd from %s; cmd = %r'
-                   % (procfile.name, cmd))
-
     ctx.obj = {
         'base_images': base_images,
         'requirements_file': requirements_file,
         'cmd': cmd,
+        'procfile': procfile,
         'entrypoint': entrypoint,
         'tag': tag,
     }
@@ -80,12 +70,24 @@ def generate(ctx):
     base_images = ctx.obj['base_images']
     requirements_file = ctx.obj['requirements_file']
     cmd = ctx.obj['cmd']
+    procfile = ctx.obj['procfile']
     entrypoint = ctx.obj['entrypoint']
 
+    if cmd is not None and procfile is not None:
+        raise Exception('Cannot specify both --cmd and --procfile')
+
+    if cmd is None and procfile is None and os.path.exists('Procfile'):
+        procfile = open('Procfile')
+
+    if procfile:
+        cmd = get_cmd_from_procfile(procfile)
+        click.echo('generate: Got cmd from %s => %r' % (procfile.name, cmd))
+    else:
+        click.echo('generate: cmd = %r' % cmd)
+
+    click.echo('generate: entrypoint = %r' % entrypoint)
     click.echo('generate: base_images = %r' % base_images)
     click.echo('generate: requirements_file = %r' % requirements_file)
-    click.echo('generate: cmd = %r' % cmd)
-    click.echo('generate: entrypoint = %r' % entrypoint)
 
     base_images_and_filenames = []
 
