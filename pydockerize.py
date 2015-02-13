@@ -50,12 +50,10 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
 
     if python_versions is not None:
         python_versions = python_versions.split(',')
-        base_images = ['python:%s-onbuild' % python_version
-                       for python_version in python_versions]
+        base_images = get_base_images_from_python_versions(python_versions)
 
     if cmd is not None and procfile is not None:
-        raise Exception(
-            'Cannot specify both --cmd and --procfile')
+        raise Exception('Cannot specify both --cmd and --procfile')
 
     if cmd is None and procfile is None and os.path.exists('Procfile'):
         procfile = open('Procfile')
@@ -71,6 +69,11 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
     if tag:
         print('\nShowing Docker images for %s:\n' % tag)
         show_docker_images(tag)
+
+
+def get_base_images_from_python_versions(python_versions):
+    return ['python:%s-onbuild' % python_version
+            for python_version in python_versions]
 
 
 def get_cmd_from_procfile(procfile):
