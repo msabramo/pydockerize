@@ -157,7 +157,7 @@ def build(ctx):
     tag = ctx.obj['tag']
     base_images = ctx.obj['base_images']
 
-    click.echo('build: tag = %r' % tag)
+    click.echo("build: tag = '%s'" % tag)
 
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
@@ -194,7 +194,7 @@ def build_one(tag, base_image, base_images, filename):
         cmd.append('--file')
         cmd.append(filename)
     cmd.append('.')
-    click.echo('build_one: Calling subprocess with cmd = %r\n'
+    click.echo("build_one: Calling subprocess with cmd = '%s'\n"
                % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
