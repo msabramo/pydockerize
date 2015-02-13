@@ -60,6 +60,8 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
 
     if procfile:
         cmd = get_cmd_from_procfile(procfile)
+        click.echo('pydockerize: Got cmd from %s; cmd = %r'
+                   % (procfile.name, cmd))
 
     ctx.obj = {
         'base_images': base_images,
