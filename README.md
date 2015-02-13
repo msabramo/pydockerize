@@ -11,9 +11,15 @@ make it into a Docker image.
 # Assume requirements in requirements.txt; doesn't tag build image
 pydockerize
 
-# Assumes requirements in requirements.txt
+# Add a tag to built image
 pydockerize -t my_cool_app
 
-# Specifies a tag and a requirements file
+# Specifies a requirements file
 pydockerize -t my_cool_app requirements-prod.txt
+
+# Specify multiple Python versions to build Docker images for
+pydockerize.py -t my_cool_app --python-versions 2.7,3.4
+
+# Specify a command to invoke when running container
+pydockerize.py -t my_cool_app --cmd "pserve app.ini"
 ```
