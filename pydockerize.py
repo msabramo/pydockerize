@@ -32,8 +32,9 @@ DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
 @click.option('-t', '--tag',
               help='Repository name (and optionally a tag) to be applied to '
                    'the resulting image in case of success')
-@click.argument('requirements_file', type=click.Path(exists=True),
-                default='requirements.txt')
+@click.option('-r', '--requirement',
+              'requirements_file', type=click.Path(exists=True),
+               default='requirements.txt')
 @click.pass_context
 def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
                 base_images=None, python_versions=None):
