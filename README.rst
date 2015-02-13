@@ -40,19 +40,19 @@ Usage examples
 .. code:: bash
 
     # Assume requirements in requirements.txt; doesn't tag build image
-    pydockerize
+    pydockerize write_dockerfiles build
 
     # Add a tag to built image
-    pydockerize -t my_cool_app
+    pydockerize -t my_cool_app write_dockerfiles build
 
     # Specifies a requirements file
-    pydockerize -t my_cool_app requirements-prod.txt
+    pydockerize -t my_cool_app requirements-prod.txt write_dockerfiles build
 
     # Specify multiple Python versions to build Docker images for
-    pydockerize.py -t my_cool_app --python-versions 2.7,3.4
+    pydockerize.py -t my_cool_app --python-versions 2.7,3.4 write_dockerfiles build
 
     # Specify a command to invoke when running container
-    pydockerize.py -t my_cool_app --cmd "pserve app.ini"
+    pydockerize.py -t my_cool_app --cmd "pserve app.ini" write_dockerfiles build
 
 Setting the ``CMD`` for image
 =============================
