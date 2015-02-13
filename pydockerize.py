@@ -90,8 +90,7 @@ def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
     print('write_dockerfile: cmd = %r' % cmd)
     print('write_dockerfile: entrypoint = %r' % entrypoint)
 
-    dirname = '.'
-    filename = os.path.join(dirname, 'Dockerfile-' + base_image)
+    filename = 'Dockerfile-' + base_image
     print('write_dockerfile: Writing %s' % filename)
 
     with open(filename, 'w+') as f:
