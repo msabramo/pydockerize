@@ -32,33 +32,44 @@ Usage
       -t, --tag TEXT              Repository name (and optionally a tag) to be
                                   applied to the resulting image in case of
                                   success
-      -r, --requirement PATH
+      -r, --requirement PATH      pip requirements file with packages to install
       --help                      Show this message and exit.
 
     Commands:
-      build              Run `docker build` with Dockerfile(s) from
-                         `write_dockerfiles`
-      write_dockerfiles  Write Dockerfile(s)
+      build     Run `docker build` with Dockerfile(s) from `generate`
+      generate  Write Dockerfile(s)
+      images    Show images for repo from --tag
 
 Usage examples
 ==============
 
 .. code:: bash
 
-    # Assume requirements in requirements.txt; doesn't tag build image
-    pydockerize write_dockerfiles build
+    # Assume requirements in requirements.txt.
+    # Tags built image with directory name (lowercased).
+    # Container CMD taken from Procfile by default.
+    $ pydockerize build
 
-    # Add a tag to built image
-    pydockerize -t my_cool_app write_dockerfiles build
+    # Add a custom tag to built image
+    $ pydockerize -t my_cool_app build
 
     # Specifies a requirements file
-    pydockerize -t my_cool_app requirements-prod.txt write_dockerfiles build
+    $ pydockerize -r requirements-prod.txt build
+
+    # Generate Dockerfile but don't build the image
+    # Perhaps you want to commit the Dockerfile and have the image built later
+    # by a CI server.
+    $ pydockerize generate
 
     # Specify multiple Python versions to build Docker images for
-    pydockerize.py -t my_cool_app --python-versions 2.7,3.4 write_dockerfiles build
+    $ pydockerize --python-versions=2.7,3.4 build
 
-    # Specify a command to invoke when running container
-    pydockerize.py -t my_cool_app --cmd "pserve app.ini" write_dockerfiles build
+    # Specify a custom command to invoke when running container
+    # (Default is to get it from Procfile, if it exists)
+    $ pydockerize --cmd="pserve app.ini" build
+
+    # Show current images for app in current directory
+    $ pydockerize images
 
 Setting the ``CMD`` for image
 =============================
