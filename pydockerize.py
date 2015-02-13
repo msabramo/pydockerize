@@ -24,13 +24,15 @@ DEFAULT_PYTHON_VERSIONS = ['2.7']
                    '"python:2.7-onbuild,python:3.4-onbuild". Conflicts with '
                    '--python-versions.')
 @click.option('-c', '--cmd',
-              help='Command (CMD) to set in image')
+              help='Command (CMD) to set in image. Conflicts with --procfile')
 @click.option('-e', '--entrypoint',
               help='Entry point (ENTRYPOINT) to set in image')
 @click.option('-p', '--python-versions',
               default=None,
               help='Python versions (comma-separated list) - e.g.: '
                    '"2.7,3.4". Conflicts with --base-images.')
+@click.option('--procfile', type=click.File(),
+              help='Procfile to get command from. Conflicts with --cmd.')
 @click.option('-t', '--tag',
               help='Repository name (and optionally a tag) to be applied to '
                    'the resulting image in case of success')
@@ -38,7 +40,7 @@ DEFAULT_PYTHON_VERSIONS = ['2.7']
                 default='requirements.txt')
 @click.pass_context
 def pydockerize(ctx, requirements_file, tag,
-                cmd, entrypoint,
+                cmd, entrypoint, procfile,
                 base_images=None, python_versions=None):
     """Create Docker images for Python apps"""
 
@@ -57,6 +59,20 @@ def pydockerize(ctx, requirements_file, tag,
                        for python_version in python_versions]
     else:
         python_versions = DEFAULT_PYTHON_VERSIONS
+
+    if cmd is not None and procfile is not None:
+        raise Exception(
+            'Cannot specify both --cmd and --procfile')
+
+    if cmd is None and procfile is None and os.path.exists('Procfile'):
+        procfile = open('Procfile')
+
+    if procfile:
+        lines = procfile.readlines()
+        if len(lines) > 1:
+            raise Exception(
+                'Procfile with multiple lines not supported')
+        cmd = lines[0].split(':')[1]
 
     print('requirements_file = %r' % requirements_file)
     print('tag = %r' % tag)
