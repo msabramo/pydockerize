@@ -92,7 +92,7 @@ def write_dockerfiles(ctx):
     base_images_and_filenames = []
 
     for base_image in base_images:
-        filename = get_filename_from_base_image(base_image)
+        filename = get_filename_from_base_image(base_image, base_images)
         write_dockerfile(base_image, requirements_file,
                          filename, cmd, entrypoint)
         base_images_and_filenames.append((base_image, filename))
@@ -157,7 +157,7 @@ def build(ctx):
     click.echo('build: tag = %r' % tag)
 
     for base_image in base_images:
-        filename = get_filename_from_base_image(base_image)
+        filename = get_filename_from_base_image(base_image, base_images)
         build_one(tag, base_image, filename)
 
 
@@ -189,8 +189,11 @@ def show_docker_images(repo):
     return subprocess.call(cmd)
 
 
-def get_filename_from_base_image(base_image):
-    return 'Dockerfile-' + base_image
+def get_filename_from_base_image(base_image, base_images):
+    if len(base_images) == 1:
+        return 'Dockerfile'
+    else:
+        return 'Dockerfile-' + base_image
 
 
 def get_tag_from_base_image(base_image):
