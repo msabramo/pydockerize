@@ -146,6 +146,7 @@ def write_dockerfile(base_image, requirements_file, filename, cmd, entrypoint):
 def build(ctx):
     """Run `docker build` with Dockerfile(s) from `write_dockerfiles`"""
 
+    tags_built = []
     tag = ctx.obj['tag']
     base_images = ctx.obj['base_images']
 
@@ -153,8 +154,12 @@ def build(ctx):
 
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
-        build_one(tag, base_image, filename)
+        tag_built = build_one(tag, base_image, filename)
+        tags_built.append(tag_built)
 
+    click.secho('build: %d Docker build(s) succeeded: %s'
+                % (len(base_images), ', '.join(tags_built)),
+                fg='green')
 
 @pydockerize.command()
 @click.pass_context
@@ -183,10 +188,12 @@ def build_one(tag, base_image, filename):
                % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
-        click.secho('build_one: Docker build succeeded.',
+        click.secho('build_one: Docker build for %s succeeded.' % tag,
                     fg='green')
+        return tag
     else:
-        click.secho('build_one: Docker build failed with %d' % status,
+        click.secho('build_one: Docker build for %s failed with %d'
+                    % (tag, status),
                     fg='red')
         raise click.Abort()
 
