@@ -183,8 +183,9 @@ def build_one(tag, base_image, filename):
         tag = tag + ':' + get_tag_from_base_image(base_image)
         cmd.append('--tag')
         cmd.append(tag)
-    cmd.append('--file')
-    cmd.append(filename)
+    if filename != 'Dockerfile':
+        cmd.append('--file')
+        cmd.append(filename)
     cmd.append('.')
     click.echo('build_one: Calling subprocess with cmd = %r\n'
                % ' '.join(cmd))
