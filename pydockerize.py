@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 import os
 import subprocess
 import textwrap
@@ -12,7 +10,7 @@ import click
 DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
 
 
-@click.command()
+@click.group(chain=True)
 @click.version_option()
 @click.option('-b', '--base-images',
               default=None,
@@ -32,8 +30,9 @@ DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
 @click.option('-t', '--tag',
               help='Repository name (and optionally a tag) to be applied to '
                    'the resulting image in case of success')
-@click.argument('requirements_file', type=click.Path(exists=True),
-                default='requirements.txt')
+@click.option('-r', '--requirement',
+              'requirements_file', type=click.Path(exists=True),
+              default='requirements.txt')
 @click.pass_context
 def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
                 base_images=None, python_versions=None):
@@ -61,14 +60,38 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
     if procfile:
         cmd = get_cmd_from_procfile(procfile)
 
-    for base_image in base_images:
-        filename = write_dockerfile(base_image, requirements_file,
-                                    cmd, entrypoint)
-        invoke_docker_build(tag, base_image, filename)
+    ctx.obj = {
+        'base_images': base_images,
+        'requirements_file': requirements_file,
+        'cmd': cmd,
+        'entrypoint': entrypoint,
+        'tag': tag,
+    }
 
-    if tag:
-        print('\nShowing Docker images for %s:\n' % tag)
-        show_docker_images(tag)
+
+@pydockerize.command()
+@click.pass_context
+def generate(ctx):
+    """Write Dockerfile(s)"""
+
+    base_images = ctx.obj['base_images']
+    requirements_file = ctx.obj['requirements_file']
+    cmd = ctx.obj['cmd']
+    entrypoint = ctx.obj['entrypoint']
+
+    click.echo('generate: base_images = %r' % base_images)
+    click.echo('generate: requirements_file = %r' % requirements_file)
+    click.echo('generate: cmd = %r' % cmd)
+    click.echo('generate: entrypoint = %r' % entrypoint)
+
+    base_images_and_filenames = []
+
+    for base_image in base_images:
+        filename = get_filename_from_base_image(base_image, base_images)
+        generate_one(base_image, requirements_file, filename, cmd, entrypoint)
+        base_images_and_filenames.append((base_image, filename))
+
+    ctx.obj['base_images_and_filenames'] = base_images_and_filenames
 
 
 def get_base_images_from_python_versions(python_versions):
@@ -84,14 +107,9 @@ def get_cmd_from_procfile(procfile):
     return lines[0].split(':')[1].strip()
 
 
-def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
-    print('write_dockerfile: base_image = %r' % base_image)
-    print('write_dockerfile: requirements_file = %r' % requirements_file)
-    print('write_dockerfile: cmd = %r' % cmd)
-    print('write_dockerfile: entrypoint = %r' % entrypoint)
-
-    filename = 'Dockerfile-' + base_image
-    print('write_dockerfile: Writing %s' % filename)
+def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
+    click.echo('generate_one: base_image = %r' % base_image)
+    click.echo('generate_one: Writing %s' % filename)
 
     with open(filename, 'w+') as f:
         f.write(textwrap.dedent("""\
@@ -114,32 +132,71 @@ def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
             WORKDIR /host
         """.format(base_image=base_image)))
         if entrypoint:
-            f.write("\nENTRYPOINT " + entrypoint)
+            f.write("\nENTRYPOINT %s\n" % entrypoint)
         if cmd:
-            f.write("\nCMD " + cmd)
+            f.write("\nCMD %s\n" % cmd)
 
     return filename
 
 
-def invoke_docker_build(repo_and_tag, base_image, filename):
-    print('invoke_docker_build: repo_and_tag = %r' % repo_and_tag)
+@pydockerize.command(
+    short_help="Run `docker build` with Dockerfile(s) from `generate`")
+@click.pass_context
+def build(ctx):
+    """Run `docker build` with Dockerfile(s) from `generate`"""
+
+    tags_built = []
+    tag = ctx.obj['tag']
+    base_images = ctx.obj['base_images']
+
+    click.echo('build: tag = %r' % tag)
+
+    for base_image in base_images:
+        filename = get_filename_from_base_image(base_image, base_images)
+        tag_built = build_one(tag, base_image, base_images, filename)
+        tags_built.append(tag_built)
+
+    click.secho('build: %d Docker build(s) succeeded: %s'
+                % (len(base_images), ', '.join(tags_built)),
+                fg='green')
+
+    ctx.invoke(images)
+
+@pydockerize.command()
+@click.pass_context
+def images(ctx):
+    """Show images for repo from --tag"""
+
+    tag = ctx.obj['tag']
+
+    if tag:
+        click.echo('\nShowing Docker images for %s:\n' % tag)
+        show_docker_images(tag)
+
+
+def build_one(tag, base_image, base_images, filename):
     cmd = ['docker', 'build']
-    if repo_and_tag:
-        if ':' in repo_and_tag:
+    if tag:
+        if ':' in tag:
             raise Exception("':' in tag not supported yet")
-        tag = get_tag_from_base_image(base_image)
+        tag = tag + ':' + get_tag_from_base_image(base_image, base_images)
         cmd.append('--tag')
-        cmd.append(repo_and_tag + ':' + tag)
-    cmd.append('--file')
-    cmd.append(filename)
+        cmd.append(tag)
+    if filename != 'Dockerfile':
+        cmd.append('--file')
+        cmd.append(filename)
     cmd.append('.')
-    print('invoke_docker_build: Calling subprocess with cmd = %r\n'
-          % ' '.join(cmd))
+    click.echo('build_one: Calling subprocess with cmd = %r\n'
+               % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
-        print('Docker build succeeded.')
+        click.secho('build_one: Docker build for %s succeeded.' % tag,
+                    fg='green')
+        return tag
     else:
-        print('Docker build failed with %d' % status)
+        click.secho('build_one: Docker build for %s failed with %d'
+                    % (tag, status),
+                    fg='red')
         raise click.Abort()
 
 
@@ -148,7 +205,17 @@ def show_docker_images(repo):
     return subprocess.call(cmd)
 
 
-def get_tag_from_base_image(base_image):
+def get_filename_from_base_image(base_image, base_images):
+    if len(base_images) == 1:
+        return 'Dockerfile'
+    else:
+        return 'Dockerfile-' + base_image
+
+
+def get_tag_from_base_image(base_image, base_images):
+    if len(base_images) == 1:
+        return 'latest'
+
     tag = base_image
     replacements = {'python:': 'py', '-onbuild': ''}
 
