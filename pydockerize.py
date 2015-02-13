@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 import os
 import subprocess
 import textwrap
@@ -70,12 +68,12 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
         'tag': tag,
     }
 
-    print('pydockerize: requirements_file = %r' % requirements_file)
-    print('pydockerize: cmd = %r' % cmd)
-    print('pydockerize: entrypoint = %r' % entrypoint)
+    click.echo('pydockerize: requirements_file = %r' % requirements_file)
+    click.echo('pydockerize: cmd = %r' % cmd)
+    click.echo('pydockerize: entrypoint = %r' % entrypoint)
 
     # if tag:
-    #     print('\nShowing Docker images for %s:\n' % tag)
+    #     click.echo('\nShowing Docker images for %s:\n' % tag)
     #     show_docker_images(tag)
 
 
@@ -84,7 +82,7 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
 def write_dockerfiles(ctx):
     """Write Dockerfile(s)"""
 
-    print('********** write_dockerfiles ********')
+    click.echo('********** write_dockerfiles ********')
 
     base_images = ctx.obj['base_images']
     requirements_file = ctx.obj['requirements_file']
@@ -116,8 +114,8 @@ def get_cmd_from_procfile(procfile):
 
 
 def write_dockerfile(base_image, requirements_file, filename, cmd, entrypoint):
-    print('write_dockerfile: base_image = %r' % base_image)
-    print('write_dockerfile: Writing %s' % filename)
+    click.echo('write_dockerfile: base_image = %r' % base_image)
+    click.echo('write_dockerfile: Writing %s' % filename)
 
     with open(filename, 'w+') as f:
         f.write(textwrap.dedent("""\
@@ -156,7 +154,7 @@ def build(ctx):
     tag = ctx.obj['tag']
     base_images = ctx.obj['base_images']
 
-    print('build: tag = %r' % tag)
+    click.echo('build: tag = %r' % tag)
 
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image)
@@ -174,13 +172,15 @@ def build_one(tag, base_image, filename):
     cmd.append('--file')
     cmd.append(filename)
     cmd.append('.')
-    print('build_one: Calling subprocess with cmd = %r\n'
-          % ' '.join(cmd))
+    click.echo('build_one: Calling subprocess with cmd = %r\n'
+               % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
-        print('build_one: Docker build succeeded.')
+        click.secho('build_one: Docker build succeeded.',
+                    fg='green')
     else:
-        print('build_one: Docker build failed with %d' % status)
+        click.secho('build_one: Docker build failed with %d' % status,
+                    fg='red')
         raise click.Abort()
 
 
