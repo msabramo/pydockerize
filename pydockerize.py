@@ -200,6 +200,8 @@ def images(ctx):
 
 # Note that `ignore_unknown_options` requires Click >= 4.0
 # and Click 4.0 is not released as of this writing
+# See http://pocoo-click.readthedocs.org/en/latest/advanced/
+# #forwarding-unknown-options
 # (@msabramo 2015-02-13)
 @pydockerize.command(context_settings=dict(
     ignore_unknown_options=True,
