@@ -198,25 +198,34 @@ def images(ctx):
         show_docker_images(tag)
 
 
-@pydockerize.command()
+# Note that `ignore_unknown_options` requires Click >= 4.0
+# and Click 4.0 is not released as of this writing
+# (@msabramo 2015-02-13)
+@pydockerize.command(context_settings=dict(
+    ignore_unknown_options=True,
+))
 @click.pass_context
-def run(ctx):
+@click.argument('docker_run_args', nargs=-1, type=click.UNPROCESSED)
+def run(ctx, docker_run_args):
     """Run a Docker container"""
 
     tag = ctx.obj['tag']
     mount_volume_from_host = True
 
-    cmd = get_run_cmd(tag, mount_volume_from_host)
+    cmd = get_run_cmd(tag, mount_volume_from_host, docker_run_args)
 
+    click.secho('Invoking: %s' % ' '.join(cmd), fg='yellow')
     status = subprocess.call(cmd)
 
 
-def get_run_cmd(tag, mount_volume_from_host=True):
+def get_run_cmd(tag, mount_volume_from_host=True, docker_run_args=None):
     cmd = ['docker', 'run']
     cmd.append('-it')
     if mount_volume_from_host:
         cmd.append('-v')
         cmd.append('%s:/host' % os.getcwd())
+    if docker_run_args:
+        cmd.extend(docker_run_args)
     cmd.append(tag)
     return cmd
 
