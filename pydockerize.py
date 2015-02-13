@@ -154,7 +154,7 @@ def build(ctx):
 
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
-        tag_built = build_one(tag, base_image, filename)
+        tag_built = build_one(tag, base_image, base_images, filename)
         tags_built.append(tag_built)
 
     click.secho('build: %d Docker build(s) succeeded: %s'
@@ -175,12 +175,12 @@ def images(ctx):
         show_docker_images(tag)
 
 
-def build_one(tag, base_image, filename):
+def build_one(tag, base_image, base_images, filename):
     cmd = ['docker', 'build']
     if tag:
         if ':' in tag:
             raise Exception("':' in tag not supported yet")
-        tag = tag + ':' + get_tag_from_base_image(base_image)
+        tag = tag + ':' + get_tag_from_base_image(base_image, base_images)
         cmd.append('--tag')
         cmd.append(tag)
     if filename != 'Dockerfile':
@@ -213,7 +213,10 @@ def get_filename_from_base_image(base_image, base_images):
         return 'Dockerfile-' + base_image
 
 
-def get_tag_from_base_image(base_image):
+def get_tag_from_base_image(base_image, base_images):
+    if len(base_images) == 1:
+        return 'latest'
+
     tag = base_image
     replacements = {'python:': 'py', '-onbuild': ''}
 
