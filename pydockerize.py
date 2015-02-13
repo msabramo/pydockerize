@@ -72,10 +72,6 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
     click.echo('pydockerize: cmd = %r' % cmd)
     click.echo('pydockerize: entrypoint = %r' % entrypoint)
 
-    # if tag:
-    #     click.echo('\nShowing Docker images for %s:\n' % tag)
-    #     show_docker_images(tag)
-
 
 @pydockerize.command()
 @click.pass_context
@@ -159,6 +155,18 @@ def build(ctx):
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
         build_one(tag, base_image, filename)
+
+
+@pydockerize.command()
+@click.pass_context
+def images(ctx):
+    """Show images for repo from --tag"""
+
+    tag = ctx.obj['tag']
+
+    if tag:
+        click.echo('\nShowing Docker images for %s:\n' % tag)
+        show_docker_images(tag)
 
 
 def build_one(tag, base_image, filename):
