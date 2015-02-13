@@ -68,11 +68,7 @@ def pydockerize(ctx, requirements_file, tag,
         procfile = open('Procfile')
 
     if procfile:
-        lines = procfile.readlines()
-        if len(lines) > 1:
-            raise Exception(
-                'Procfile with multiple lines not supported')
-        cmd = lines[0].split(':')[1].strip()
+        cmd = get_cmd_from_procfile(procfile)
 
     for base_image in base_images:
         filename = write_dockerfile(base_image, requirements_file,
@@ -84,6 +80,14 @@ def pydockerize(ctx, requirements_file, tag,
         show_docker_images(tag)
 
     print()
+
+
+def get_cmd_from_procfile(procfile):
+    lines = procfile.readlines()
+    if len(lines) > 1:
+        raise Exception(
+            'Procfile with multiple lines not supported')
+    return lines[0].split(':')[1].strip()
 
 
 def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
