@@ -23,6 +23,10 @@ DEFAULT_PYTHON_VERSIONS = ['2.7']
               help='Base docker images (comma-separated list) - e.g.: '
                    '"python:2.7-onbuild,python:3.4-onbuild". Conflicts with '
                    '--python-versions.')
+@click.option('-c', '--cmd',
+              help='Command (CMD) to set in image')
+@click.option('-e', '--entrypoint',
+              help='Entry point (ENTRYPOINT) to set in image')
 @click.option('-p', '--python-versions',
               default=None,
               help='Python versions (comma-separated list) - e.g.: '
@@ -34,6 +38,7 @@ DEFAULT_PYTHON_VERSIONS = ['2.7']
                 default='requirements.txt')
 @click.pass_context
 def pydockerize(ctx, requirements_file, tag,
+                cmd, entrypoint,
                 base_images=None, python_versions=None):
     """Create Docker images for Python apps"""
 
@@ -56,7 +61,8 @@ def pydockerize(ctx, requirements_file, tag,
     print('requirements_file = %r' % requirements_file)
     print('tag = %r' % tag)
     for base_image in base_images:
-        filename = write_dockerfile(base_image, requirements_file)
+        filename = write_dockerfile(base_image, requirements_file,
+                                    cmd, entrypoint)
         invoke_docker_build(tag, base_image, filename)
 
     print('\nShowing Docker images for %s:\n' % tag)
@@ -64,7 +70,7 @@ def pydockerize(ctx, requirements_file, tag,
     print()
 
 
-def write_dockerfile(base_image, requirements_file):
+def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
     print('write_dockerfile: base_image = %r' % base_image)
     dirname = '.'
     filename = os.path.join(dirname, 'Dockerfile-' + base_image)
@@ -86,6 +92,16 @@ def write_dockerfile(base_image, requirements_file):
             #   - `volumes: [".:/host"]` in fig.yml
             WORKDIR /host
         """.format(base_image=base_image)))
+        if entrypoint:
+            f.write(textwrap.dedent("""\
+
+                ENTRYPOINT {entrypoint}
+            """.format(entrypoint=entrypoint)))
+        if cmd:
+            f.write(textwrap.dedent("""\
+
+                CMD {cmd}
+            """.format(cmd=cmd)))
 
     return filename
 
