@@ -138,9 +138,9 @@ def write_dockerfile(base_image, requirements_file, filename, cmd, entrypoint):
             WORKDIR /host
         """.format(base_image=base_image)))
         if entrypoint:
-            f.write("\nENTRYPOINT " + entrypoint)
+            f.write("\nENTRYPOINT %s\n" % entrypoint)
         if cmd:
-            f.write("\nCMD " + cmd)
+            f.write("\nCMD %s\n" % cmd)
 
     return filename
 
