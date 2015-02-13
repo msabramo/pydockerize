@@ -7,7 +7,7 @@ import textwrap
 import click
 
 
-DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
+DEFAULT_BASE_IMAGES = ['python:2.7']
 
 
 @click.group(chain=True)
@@ -32,7 +32,8 @@ DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
                    'the resulting image in case of success')
 @click.option('-r', '--requirement',
               'requirements_file', type=click.Path(exists=True),
-              default='requirements.txt')
+              default='requirements.txt',
+              help='pip requirements file with packages to install')
 @click.pass_context
 def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
                 base_images=None, python_versions=None):
@@ -113,24 +114,27 @@ def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
 
     with open(filename, 'w+') as f:
         f.write(textwrap.dedent("""\
-            # This Docker image takes care of doing:
-            #
-            #     pip install -r requirements.txt
-            #
-            # For more details on this Docker image, see:
-            # https://registry.hub.docker.com/_/python/
+            # This is a Dockerfile
+            # Dockerfile reference: https://docs.docker.com/reference/builder/
+
             FROM {base_image}
 
+            RUN mkdir -p /usr/src/app
+            WORKDIR /usr/src/app
+
+            # Install necessary Python packages from pip requirements file
+            # requirements files: http://bit.ly/pip-requirements-files
+            COPY {requirements_file} /usr/src/app/
+            RUN pip install -r {requirements_file}
+
             # This is so one can mount a volume from the host to give the
-            # container access to the host's current working directory.
+            # container access to the host's current working directory. E.g.:
             #
-            # E.g.:
-            #
-            #   - `docker run -v $(pwd):/host` from command-line
-            #         or
+            #   - `docker run -v $(pwd):/host` from command-line or ...
             #   - `volumes: [".:/host"]` in fig.yml
             WORKDIR /host
-        """.format(base_image=base_image)))
+        """.format(base_image=base_image,
+                   requirements_file=requirements_file)))
         if entrypoint:
             f.write("\nENTRYPOINT %s\n" % entrypoint)
         if cmd:
