@@ -68,22 +68,21 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
         'tag': tag,
     }
 
-    click.echo('pydockerize: requirements_file = %r' % requirements_file)
-    click.echo('pydockerize: cmd = %r' % cmd)
-    click.echo('pydockerize: entrypoint = %r' % entrypoint)
-
 
 @pydockerize.command()
 @click.pass_context
 def write_dockerfiles(ctx):
     """Write Dockerfile(s)"""
 
-    click.echo('********** write_dockerfiles ********')
-
     base_images = ctx.obj['base_images']
     requirements_file = ctx.obj['requirements_file']
     cmd = ctx.obj['cmd']
     entrypoint = ctx.obj['entrypoint']
+
+    click.echo('write_dockerfiles: base_images = %r' % base_images)
+    click.echo('write_dockerfiles: requirements_file = %r' % requirements_file)
+    click.echo('write_dockerfiles: cmd = %r' % cmd)
+    click.echo('write_dockerfiles: entrypoint = %r' % entrypoint)
 
     base_images_and_filenames = []
 
