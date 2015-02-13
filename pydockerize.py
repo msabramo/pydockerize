@@ -112,7 +112,7 @@ def get_cmd_from_procfile(procfile):
     if len(lines) > 1:
         raise Exception(
             'Procfile with multiple lines not supported')
-    return lines[0].split(':')[1].strip()
+    return lines[0].split(':', 1)[1].strip()
 
 
 def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
