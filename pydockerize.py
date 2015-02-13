@@ -12,12 +12,13 @@ import textwrap
 import click
 
 
-DEFAULT_BASE_IMAGES = ['python:2-onbuild']
+DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
 
 
 @click.command()
 @click.version_option()
 @click.option('-b', '--base-images',
+              default=','.join(DEFAULT_BASE_IMAGES),
               help='Base docker images (comma-separated list) - e.g.: '
                    '"python:2.7-onbuild,python:3.4-onbuild"')
 @click.option('-t', '--tag',
