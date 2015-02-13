@@ -72,10 +72,8 @@ def pydockerize(ctx, requirements_file, tag,
         if len(lines) > 1:
             raise Exception(
                 'Procfile with multiple lines not supported')
-        cmd = lines[0].split(':')[1]
+        cmd = lines[0].split(':')[1].strip()
 
-    print('requirements_file = %r' % requirements_file)
-    print('tag = %r' % tag)
     for base_image in base_images:
         filename = write_dockerfile(base_image, requirements_file,
                                     cmd, entrypoint)
@@ -90,6 +88,10 @@ def pydockerize(ctx, requirements_file, tag,
 
 def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
     print('write_dockerfile: base_image = %r' % base_image)
+    print('write_dockerfile: requirements_file = %r' % requirements_file)
+    print('write_dockerfile: cmd = %r' % cmd)
+    print('write_dockerfile: entrypoint = %r' % entrypoint)
+
     dirname = '.'
     filename = os.path.join(dirname, 'Dockerfile-' + base_image)
     print('write_dockerfile: Writing %s' % filename)
@@ -136,7 +138,8 @@ def invoke_docker_build(repo_and_tag, base_image, filename):
     cmd.append('--file')
     cmd.append(filename)
     cmd.append('.')
-    print('invoke_docker_build: Calling subprocess with cmd = %r' % cmd)
+    print('invoke_docker_build: Calling subprocess with cmd = %r\n'
+          % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
         print('Docker build succeeded.')
