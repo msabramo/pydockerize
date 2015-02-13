@@ -81,8 +81,10 @@ def pydockerize(ctx, requirements_file, tag,
                                     cmd, entrypoint)
         invoke_docker_build(tag, base_image, filename)
 
-    print('\nShowing Docker images for %s:\n' % tag)
-    show_docker_images(tag)
+    if tag:
+        print('\nShowing Docker images for %s:\n' % tag)
+        show_docker_images(tag)
+
     print()
 
 
