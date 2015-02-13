@@ -13,25 +13,49 @@ import click
 
 
 DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
+DEFAULT_PYTHON_VERSIONS = ['2.7']
 
 
 @click.command()
 @click.version_option()
 @click.option('-b', '--base-images',
-              default=','.join(DEFAULT_BASE_IMAGES),
+              default=None,
               help='Base docker images (comma-separated list) - e.g.: '
-                   '"python:2.7-onbuild,python:3.4-onbuild"')
+                   '"python:2.7-onbuild,python:3.4-onbuild". Conflicts with '
+                   '--python-versions.')
+@click.option('-p', '--python-versions',
+              default=None,
+              help='Python versions (comma-separated list) - e.g.: '
+                   '"2.7,3.4". Conflicts with --base-images.')
 @click.option('-t', '--tag',
               help='Repository name (and optionally a tag) to be applied to '
                    'the resulting image in case of success')
 @click.argument('requirements_file', type=click.Path(exists=True),
                 default='requirements.txt')
 @click.pass_context
-def pydockerize(ctx, requirements_file, tag, base_images=DEFAULT_BASE_IMAGES):
+def pydockerize(ctx, requirements_file, tag,
+                base_images=None, python_versions=None):
     """Create Docker images for Python apps"""
+
+    if base_images is not None and python_versions is not None:
+        raise Exception(
+            'Cannot specify both --base-images and --python_versions')
+
+    if base_images is not None:
+        base_images = base_images.split(',')
+    else:
+        base_images = DEFAULT_BASE_IMAGES
+
+    if python_versions is not None:
+        python_versions = python_versions.split(',')
+        base_images = ['python:%s-onbuild' % python_version
+                       for python_version in python_versions]
+    else:
+        python_versions = DEFAULT_PYTHON_VERSIONS
+
     print('requirements_file = %r' % requirements_file)
     print('tag = %r' % tag)
-    for base_image in base_images.split(','):
+    for base_image in base_images:
         filename = write_dockerfile(base_image, requirements_file)
         invoke_docker_build(tag, base_image, filename)
 
