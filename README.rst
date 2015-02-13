@@ -13,7 +13,7 @@ Usage
 ::
 
     $ pydockerize --help
-    Usage: pydockerize [OPTIONS] [REQUIREMENTS_FILE]
+    Usage: pydockerize [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
 
       Create Docker images for Python apps
 
@@ -32,7 +32,13 @@ Usage
       -t, --tag TEXT              Repository name (and optionally a tag) to be
                                   applied to the resulting image in case of
                                   success
+      -r, --requirement PATH
       --help                      Show this message and exit.
+
+    Commands:
+      build              Run `docker build` with Dockerfile(s) from
+                         `write_dockerfiles`
+      write_dockerfiles  Write Dockerfile(s)
 
 Usage examples
 ==============
