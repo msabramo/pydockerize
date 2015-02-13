@@ -71,7 +71,7 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
 
 @pydockerize.command()
 @click.pass_context
-def write_dockerfiles(ctx):
+def generate(ctx):
     """Write Dockerfile(s)"""
 
     base_images = ctx.obj['base_images']
@@ -79,17 +79,16 @@ def write_dockerfiles(ctx):
     cmd = ctx.obj['cmd']
     entrypoint = ctx.obj['entrypoint']
 
-    click.echo('write_dockerfiles: base_images = %r' % base_images)
-    click.echo('write_dockerfiles: requirements_file = %r' % requirements_file)
-    click.echo('write_dockerfiles: cmd = %r' % cmd)
-    click.echo('write_dockerfiles: entrypoint = %r' % entrypoint)
+    click.echo('generate: base_images = %r' % base_images)
+    click.echo('generate: requirements_file = %r' % requirements_file)
+    click.echo('generate: cmd = %r' % cmd)
+    click.echo('generate: entrypoint = %r' % entrypoint)
 
     base_images_and_filenames = []
 
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
-        write_dockerfile(base_image, requirements_file,
-                         filename, cmd, entrypoint)
+        generate_one(base_image, requirements_file, filename, cmd, entrypoint)
         base_images_and_filenames.append((base_image, filename))
 
     ctx.obj['base_images_and_filenames'] = base_images_and_filenames
@@ -108,9 +107,9 @@ def get_cmd_from_procfile(procfile):
     return lines[0].split(':')[1].strip()
 
 
-def write_dockerfile(base_image, requirements_file, filename, cmd, entrypoint):
-    click.echo('write_dockerfile: base_image = %r' % base_image)
-    click.echo('write_dockerfile: Writing %s' % filename)
+def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
+    click.echo('generate_one: base_image = %r' % base_image)
+    click.echo('generate_one: Writing %s' % filename)
 
     with open(filename, 'w+') as f:
         f.write(textwrap.dedent("""\
@@ -140,11 +139,11 @@ def write_dockerfile(base_image, requirements_file, filename, cmd, entrypoint):
     return filename
 
 
-@pydockerize.command(short_help="Run `docker build` with Dockerfile(s) from "
-                                "`write_dockerfiles`")
+@pydockerize.command(
+    short_help="Run `docker build` with Dockerfile(s) from `generate`")
 @click.pass_context
 def build(ctx):
-    """Run `docker build` with Dockerfile(s) from `write_dockerfiles`"""
+    """Run `docker build` with Dockerfile(s) from `generate`"""
 
     tags_built = []
     tag = ctx.obj['tag']
