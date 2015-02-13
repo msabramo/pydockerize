@@ -198,6 +198,29 @@ def images(ctx):
         show_docker_images(tag)
 
 
+@pydockerize.command()
+@click.pass_context
+def run(ctx):
+    """Run a Docker container"""
+
+    tag = ctx.obj['tag']
+    mount_volume_from_host = True
+
+    cmd = get_run_cmd(tag, mount_volume_from_host)
+
+    status = subprocess.call(cmd)
+
+
+def get_run_cmd(tag, mount_volume_from_host=True):
+    cmd = ['docker', 'run']
+    cmd.append('-it')
+    if mount_volume_from_host:
+        cmd.append('-v')
+        cmd.append('%s:/host' % os.getcwd())
+    cmd.append(tag)
+    return cmd
+
+
 def build_one(tag, base_image, base_images, filename):
     cmd = ['docker', 'build']
     if tag:
