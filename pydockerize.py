@@ -162,6 +162,9 @@ def build(ctx):
 
     click.echo("build: tag = '%s'" % tag)
 
+    if no_dockerfiles_already_exist(base_images):
+        ctx.invoke(generate)
+
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
         tag_built = build_one(tag, base_image, base_images, filename)
@@ -172,6 +175,16 @@ def build(ctx):
                 fg='green')
 
     ctx.invoke(images)
+
+
+def no_dockerfiles_already_exist(base_images):
+    for base_image in base_images:
+        filename = get_filename_from_base_image(base_image, base_images)
+        if os.path.exists(filename):
+            return False
+
+    return True
+
 
 @pydockerize.command()
 @click.pass_context
