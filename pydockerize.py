@@ -161,6 +161,8 @@ def build(ctx):
                 % (len(base_images), ', '.join(tags_built)),
                 fg='green')
 
+    ctx.invoke(images)
+
 @pydockerize.command()
 @click.pass_context
 def images(ctx):
