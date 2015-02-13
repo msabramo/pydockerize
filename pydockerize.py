@@ -12,7 +12,7 @@ import click
 DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
 
 
-@click.command()
+@click.group(chain=True)
 @click.version_option()
 @click.option('-b', '--base-images',
               default=None,
@@ -34,7 +34,7 @@ DEFAULT_BASE_IMAGES = ['python:2.7-onbuild']
                    'the resulting image in case of success')
 @click.option('-r', '--requirement',
               'requirements_file', type=click.Path(exists=True),
-               default='requirements.txt')
+              default='requirements.txt')
 @click.pass_context
 def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
                 base_images=None, python_versions=None):
@@ -62,22 +62,42 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
     if procfile:
         cmd = get_cmd_from_procfile(procfile)
 
-    base_images_and_filenames = write_dockerfiles(
-        base_images, requirements_file, cmd, entrypoint)
+    ctx.obj = {
+        'base_images': base_images,
+        'requirements_file': requirements_file,
+        'cmd': cmd,
+        'entrypoint': entrypoint,
+        'tag': tag,
+    }
 
-    for base_image, filename in base_images_and_filenames:
-        invoke_docker_build(tag, base_image, filename)
+    print('pydockerize: requirements_file = %r' % requirements_file)
+    print('pydockerize: cmd = %r' % cmd)
+    print('pydockerize: entrypoint = %r' % entrypoint)
 
-    if tag:
-        print('\nShowing Docker images for %s:\n' % tag)
-        show_docker_images(tag)
+    # if tag:
+    #     print('\nShowing Docker images for %s:\n' % tag)
+    #     show_docker_images(tag)
 
 
-def write_dockerfiles(base_images, requirements_file, cmd, entrypoint):
+@pydockerize.command()
+@click.pass_context
+def write_dockerfiles(ctx):
+    print('********** write_dockerfiles ********')
+
+    base_images = ctx.obj['base_images']
+    requirements_file = ctx.obj['requirements_file']
+    cmd = ctx.obj['cmd']
+    entrypoint = ctx.obj['entrypoint']
+
+    base_images_and_filenames = []
+
     for base_image in base_images:
         filename = write_dockerfile(base_image, requirements_file,
                                     cmd, entrypoint)
-        yield base_image, filename
+        base_images_and_filenames.append((base_image, filename))
+        # yield base_image, filename
+
+    ctx.obj['base_images_and_filenames'] = base_images_and_filenames
 
 
 def get_base_images_from_python_versions(python_versions):
@@ -95,9 +115,6 @@ def get_cmd_from_procfile(procfile):
 
 def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
     print('write_dockerfile: base_image = %r' % base_image)
-    print('write_dockerfile: requirements_file = %r' % requirements_file)
-    print('write_dockerfile: cmd = %r' % cmd)
-    print('write_dockerfile: entrypoint = %r' % entrypoint)
 
     filename = 'Dockerfile-' + base_image
     print('write_dockerfile: Writing %s' % filename)
@@ -130,25 +147,36 @@ def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
     return filename
 
 
-def invoke_docker_build(repo_and_tag, base_image, filename):
-    print('invoke_docker_build: repo_and_tag = %r' % repo_and_tag)
+@pydockerize.command()
+@click.pass_context
+def build(ctx):
+    tag = ctx.obj['tag']
+    base_images_and_filenames = ctx.obj['base_images_and_filenames']
+
+    print('build: tag = %r' % tag)
+
+    for base_image, filename in base_images_and_filenames:
+        build_one(tag, base_image, filename)
+
+
+def build_one(tag, base_image, filename):
     cmd = ['docker', 'build']
-    if repo_and_tag:
-        if ':' in repo_and_tag:
+    if tag:
+        if ':' in tag:
             raise Exception("':' in tag not supported yet")
-        tag = get_tag_from_base_image(base_image)
+        tag = tag + ':' + get_tag_from_base_image(base_image)
         cmd.append('--tag')
-        cmd.append(repo_and_tag + ':' + tag)
+        cmd.append(tag)
     cmd.append('--file')
     cmd.append(filename)
     cmd.append('.')
-    print('invoke_docker_build: Calling subprocess with cmd = %r\n'
+    print('build_one: Calling subprocess with cmd = %r\n'
           % ' '.join(cmd))
     status = subprocess.call(cmd)
     if status == 0:
-        print('Docker build succeeded.')
+        print('build_one: Docker build succeeded.')
     else:
-        print('Docker build failed with %d' % status)
+        print('build_one: Docker build failed with %d' % status)
         raise click.Abort()
 
 
