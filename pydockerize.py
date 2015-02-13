@@ -94,8 +94,9 @@ def write_dockerfiles(ctx):
     base_images_and_filenames = []
 
     for base_image in base_images:
-        filename = write_dockerfile(base_image, requirements_file,
-                                    cmd, entrypoint)
+        filename = get_filename_from_base_image(base_image)
+        write_dockerfile(base_image, requirements_file,
+                         filename, cmd, entrypoint)
         base_images_and_filenames.append((base_image, filename))
 
     ctx.obj['base_images_and_filenames'] = base_images_and_filenames
@@ -114,10 +115,8 @@ def get_cmd_from_procfile(procfile):
     return lines[0].split(':')[1].strip()
 
 
-def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
+def write_dockerfile(base_image, requirements_file, filename, cmd, entrypoint):
     print('write_dockerfile: base_image = %r' % base_image)
-
-    filename = 'Dockerfile-' + base_image
     print('write_dockerfile: Writing %s' % filename)
 
     with open(filename, 'w+') as f:
@@ -155,11 +154,12 @@ def build(ctx):
     """Run `docker build` with Dockerfile(s) from `write_dockerfiles`"""
 
     tag = ctx.obj['tag']
-    base_images_and_filenames = ctx.obj['base_images_and_filenames']
+    base_images = ctx.obj['base_images']
 
     print('build: tag = %r' % tag)
 
-    for base_image, filename in base_images_and_filenames:
+    for base_image in base_images:
+        filename = get_filename_from_base_image(base_image)
         build_one(tag, base_image, filename)
 
 
@@ -187,6 +187,10 @@ def build_one(tag, base_image, filename):
 def show_docker_images(repo):
     cmd = ['docker', 'images', repo]
     return subprocess.call(cmd)
+
+
+def get_filename_from_base_image(base_image):
+    return 'Dockerfile-' + base_image
 
 
 def get_tag_from_base_image(base_image):
