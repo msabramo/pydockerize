@@ -52,6 +52,9 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
         python_versions = python_versions.split(',')
         base_images = get_base_images_from_python_versions(python_versions)
 
+    if tag is None:
+        tag = os.path.basename(os.getcwd()).lower()
+
     ctx.obj = {
         'base_images': base_images,
         'requirements_file': requirements_file,
