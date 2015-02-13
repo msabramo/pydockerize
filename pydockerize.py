@@ -82,6 +82,8 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
 @pydockerize.command()
 @click.pass_context
 def write_dockerfiles(ctx):
+    """Write Dockerfile(s)"""
+
     print('********** write_dockerfiles ********')
 
     base_images = ctx.obj['base_images']
@@ -147,9 +149,12 @@ def write_dockerfile(base_image, requirements_file, cmd, entrypoint):
     return filename
 
 
-@pydockerize.command()
+@pydockerize.command(short_help="Run `docker build` with Dockerfile(s) from "
+                                "`write_dockerfiles`")
 @click.pass_context
 def build(ctx):
+    """Run `docker build` with Dockerfile(s) from `write_dockerfiles`"""
+
     tag = ctx.obj['tag']
     base_images_and_filenames = ctx.obj['base_images_and_filenames']
 
