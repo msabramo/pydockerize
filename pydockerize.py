@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import os
+import re
+import shlex
 import subprocess
 import textwrap
 
@@ -112,7 +114,45 @@ def get_cmd_from_procfile(procfile):
     if len(lines) > 1:
         raise Exception(
             'Procfile with multiple lines not supported')
-    return lines[0].split(':', 1)[1].strip()
+    cmd = lines[0].split(':', 1)[1].strip()
+    env_dict = get_env()
+    for key, value in env_dict.items():
+        cmd = cmd.replace('$' + key, value)
+    return cmd
+
+
+def get_env(filename='.env'):
+    if not os.path.exists('.env'):
+        return {}
+
+    with open('.env') as dotenv_file:
+        env_dict = parse_dotenv(dotenv_file.read())
+
+    return env_dict
+
+
+def parse_dotenv(content):
+    """
+    Parse the content of a .env file (a line-delimited KEY=value format) into a
+    dictionary mapping keys to values.
+    """
+    values = {}
+    for line in content.splitlines():
+        lexer = shlex.shlex(line, posix=True)
+        lexer.wordchars += '/.+-():'
+        tokens = list(lexer)
+
+        # parses the assignment statement
+        if len(tokens) != 3:
+            continue
+        name, op, value = tokens
+        if op != '=':
+            continue
+        if not re.match(r'[A-Za-z_][A-Za-z_0-9]*', name):
+            continue
+        values[name] = value
+
+    return values
 
 
 def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
@@ -223,12 +263,23 @@ def run(ctx, docker_run_args):
 def get_run_cmd(tag, mount_volume_from_host=True, docker_run_args=None):
     cmd = ['docker', 'run']
     cmd.append('-it')
+
     if mount_volume_from_host:
         cmd.append('-v')
         cmd.append('%s:/host' % os.getcwd())
+
+    env_dict = get_env()
+    port = env_dict.get('PORT', None)
+
+    if port:
+        cmd.append('-p')
+        cmd.append('%s:%s' % (port, port))
+
     if docker_run_args:
         cmd.extend(docker_run_args)
+
     cmd.append(tag)
+
     return cmd
 
 
