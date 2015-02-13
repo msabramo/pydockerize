@@ -61,14 +61,22 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
     if procfile:
         cmd = get_cmd_from_procfile(procfile)
 
-    for base_image in base_images:
-        filename = write_dockerfile(base_image, requirements_file,
-                                    cmd, entrypoint)
+    base_images_and_filenames = write_dockerfiles(
+        base_images, requirements_file, cmd, entrypoint)
+
+    for base_image, filename in base_images_and_filenames:
         invoke_docker_build(tag, base_image, filename)
 
     if tag:
         print('\nShowing Docker images for %s:\n' % tag)
         show_docker_images(tag)
+
+
+def write_dockerfiles(base_images, requirements_file, cmd, entrypoint):
+    for base_image in base_images:
+        filename = write_dockerfile(base_image, requirements_file,
+                                    cmd, entrypoint)
+        yield base_image, filename
 
 
 def get_base_images_from_python_versions(python_versions):
