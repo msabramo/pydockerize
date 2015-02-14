@@ -36,9 +36,11 @@ Usage
       --help                      Show this message and exit.
 
     Commands:
-      build     Run `docker build` with Dockerfile(s) from `generate`
-      generate  Write Dockerfile(s)
-      images    Show images for repo from --tag
+      build        Run `docker build` with Dockerfile(s) from `generate`
+      generate     Write Dockerfile(s)
+      generatefig  Generate fig.yml for fig/Docker Compose (http://fig.sh).
+      images       Show images for repo from --tag
+      run          Run a Docker container
 
 Usage examples
 ==============
