@@ -74,6 +74,14 @@ Usage examples
     # Show current images for app in current directory
     $ pydockerize images
 
+    $ pydockerize run -d
+    Invoking: docker run -it --name=inventorysvc -v /Users/marca/dev/surveymonkey/inventorysvc:/host -p 6200:6200 -d inventorysvc
+    fe01097e6b7a35150afce19888b65ad94cd51c9cc256834a6bb22c7c88f881fc
+
+    $ pydockerize ps
+    CONTAINER ID        IMAGE                 COMMAND                CREATED             STATUS              PORTS                    NAMES
+    fe01097e6b7a        inventorysvc:latest   "/bin/sh -c 'gunicor   42 seconds ago      Up 41 seconds       0.0.0.0:6200->6200/tcp   inventorysvc
+
 Setting the ``CMD`` for image
 =============================
 
