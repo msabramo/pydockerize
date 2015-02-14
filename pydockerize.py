@@ -74,9 +74,9 @@ def generate(ctx):
 
     base_images = ctx.obj['base_images']
     requirements_file = ctx.obj['requirements_file']
+    entrypoint = ctx.obj['entrypoint']
     cmd = ctx.obj['cmd']
     procfile = ctx.obj['procfile']
-    entrypoint = ctx.obj['entrypoint']
 
     if cmd is not None and procfile is not None:
         raise Exception('Cannot specify both --cmd and --procfile')
@@ -258,6 +258,51 @@ def run(ctx, docker_run_args):
 
     click.secho('Invoking: %s' % ' '.join(cmd), fg='yellow')
     status = subprocess.call(cmd)
+
+
+@pydockerize.command(
+    short_help="Generate fig.yml for fig/Docker Compose (http://fig.sh).")
+@click.pass_context
+def generatefig(ctx):
+    """Generate fig.yml for fig/Docker Compose (http://fig.sh)."""
+
+    filename = 'fig.yml'
+    click.echo('generatefig: Writing %s' % filename)
+
+    env_dict = get_env()
+    port = env_dict.get('PORT', None)
+
+    if port:
+        ports_txt = '["{port}:{port}"]'.format(port=port)
+    else:
+        ports_txt = '[]'
+
+    tag = ctx.obj['tag']
+    cmd = ctx.obj['cmd']
+    procfile = ctx.obj['procfile']
+
+    if cmd is not None and procfile is not None:
+        raise Exception('Cannot specify both --cmd and --procfile')
+
+    if cmd is None and procfile is None and os.path.exists('Procfile'):
+        procfile = open('Procfile')
+
+    if procfile:
+        cmd = get_cmd_from_procfile(procfile)
+        click.echo('generatefig: Got cmd from %s => %r' % (procfile.name, cmd))
+    else:
+        click.echo('generatefig: cmd = %r' % cmd)
+
+    with open(filename, 'w+') as f:
+        f.write(textwrap.dedent("""\
+            web:
+              image: {tag}
+              ports: {ports_txt}
+              volumes: [".:/host"]
+              command: "{cmd}"
+        """).format(tag=tag,
+                    ports_txt=ports_txt,
+                    cmd=cmd))
 
 
 def get_run_cmd(tag, mount_volume_from_host=True, docker_run_args=None):
