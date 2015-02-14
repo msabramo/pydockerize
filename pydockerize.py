@@ -260,6 +260,16 @@ def run(ctx, docker_run_args):
     status = subprocess.call(cmd)
 
 
+@pydockerize.command()
+@click.pass_context
+def ps(ctx):
+    """List Docker containers"""
+
+    tag = ctx.obj['tag']
+    cmd = "docker ps | GREP_OPTIONS='' egrep '^CONTAINER ID|%s'" % tag
+    status = subprocess.call(cmd, shell=True)
+
+
 @pydockerize.command(
     short_help="Generate fig.yml for fig/Docker Compose (http://fig.sh).")
 @click.pass_context
@@ -308,6 +318,7 @@ def generatefig(ctx):
 def get_run_cmd(tag, mount_volume_from_host=True, docker_run_args=None):
     cmd = ['docker', 'run']
     cmd.append('-it')
+    cmd.append('--name=%s' % tag)
 
     if mount_volume_from_host:
         cmd.append('-v')

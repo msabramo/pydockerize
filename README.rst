@@ -40,6 +40,7 @@ Usage
       generate     Write Dockerfile(s)
       generatefig  Generate fig.yml for fig/Docker Compose (http://fig.sh).
       images       Show images for repo from --tag
+      ps           List Docker containers
       run          Run a Docker container
 
 Usage examples
