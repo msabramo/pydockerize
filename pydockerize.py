@@ -34,10 +34,13 @@ DEFAULT_BASE_IMAGES = ['python:2.7']
                    'the resulting image in case of success')
 @click.option('-r', '--requirement',
               'requirements_file', type=click.Path(exists=True),
-              default='requirements.txt',
               help='pip requirements file with packages to install')
+@click.option('-i', '--index-url',
+              'index_url',
+              help='Base URL of Python Package Index.')
 @click.pass_context
-def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
+def pydockerize(ctx, requirements_file, index_url, tag,
+                cmd, entrypoint, procfile,
                 base_images=None, python_versions=None):
     """Create Docker images for Python apps"""
 
@@ -57,9 +60,22 @@ def pydockerize(ctx, requirements_file, tag, cmd, entrypoint, procfile,
     if tag is None:
         tag = os.path.basename(os.getcwd()).lower()
 
+    if requirements_file is None:
+        requirements_file = 'requirements.txt'
+        if not os.path.exists(requirements_file):
+            with open(requirements_file, 'w') as f:
+                f.write(textwrap.dedent("""\
+                    #!/usr/bin/env pip install -r
+                    # Why requirements.txt?
+                    # See https://caremad.io/2013/07/setup-vs-requirement/
+
+                    -e .
+                """))
+
     ctx.obj = {
         'base_images': base_images,
         'requirements_file': requirements_file,
+        'index_url': index_url,
         'cmd': cmd,
         'procfile': procfile,
         'entrypoint': entrypoint,
@@ -74,6 +90,7 @@ def generate(ctx):
 
     base_images = ctx.obj['base_images']
     requirements_file = ctx.obj['requirements_file']
+    index_url = ctx.obj['index_url']
     entrypoint = ctx.obj['entrypoint']
     cmd = ctx.obj['cmd']
     procfile = ctx.obj['procfile']
@@ -98,7 +115,8 @@ def generate(ctx):
 
     for base_image in base_images:
         filename = get_filename_from_base_image(base_image, base_images)
-        generate_one(base_image, requirements_file, filename, cmd, entrypoint)
+        generate_one(base_image, requirements_file, index_url, filename,
+                     cmd, entrypoint)
         base_images_and_filenames.append((base_image, filename))
 
     ctx.obj['base_images_and_filenames'] = base_images_and_filenames
@@ -155,9 +173,14 @@ def parse_dotenv(content):
     return values
 
 
-def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
+def generate_one(base_image, requirements_file, index_url, filename,
+                 cmd, entrypoint):
     click.echo('generate_one: base_image = %r' % base_image)
     click.echo('generate_one: Writing %s' % filename)
+
+    pip_options = ''
+    if index_url:
+        pip_options += '--index-url={index_url}'.format(index_url=index_url)
 
     with open(filename, 'w+') as f:
         f.write(textwrap.dedent("""\
@@ -171,8 +194,17 @@ def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
 
             # Install necessary Python packages from pip requirements file
             # requirements files: http://bit.ly/pip-requirements-files
-            COPY {requirements_file} /usr/src/app/
-            RUN pip install -r {requirements_file}
+            ADD . /usr/src/app
+            RUN if [ -f requirements.apt ]; then \
+                    apt-get update; \
+                    DEBIAN_FRONTEND=noninteractive xargs apt-get -yq install < requirements.apt; \
+                fi
+            RUN if [ -f "{requirements_file}" ]; then \
+                    pip install {pip_options} -r {requirements_file}; \
+                fi
+            RUN if [ -f setup.py ]; then \
+                    pip install {pip_options} -e .; \
+                fi
 
             # This is so one can mount a volume from the host to give the
             # container access to the host's current working directory. E.g.:
@@ -181,7 +213,8 @@ def generate_one(base_image, requirements_file, filename, cmd, entrypoint):
             #   - `volumes: [".:/host"]` in fig.yml
             WORKDIR /host
         """.format(base_image=base_image,
-                   requirements_file=requirements_file)))
+                   requirements_file=requirements_file,
+                   pip_options=pip_options)))
         if entrypoint:
             f.write("\nENTRYPOINT %s\n" % entrypoint)
         if cmd:
