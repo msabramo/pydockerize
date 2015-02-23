@@ -362,7 +362,7 @@ def get_run_cmd(tag, mount_volume_from_host=True, docker_run_args=None):
 
     if port:
         cmd.append('-p')
-        cmd.append('%s:%s' % (port, port))
+        cmd.append('%s' % port)
 
     if docker_run_args:
         cmd.extend(docker_run_args)
