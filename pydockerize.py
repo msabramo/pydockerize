@@ -364,6 +364,9 @@ def get_run_cmd(tag, mount_volume_from_host=True, docker_run_args=None):
         cmd.append('-p')
         cmd.append('%s' % port)
 
+    if not docker_run_args or '-d' not in docker_run_args:
+        cmd.append('--rm')
+
     if docker_run_args:
         cmd.extend(docker_run_args)
 
