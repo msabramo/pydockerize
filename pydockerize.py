@@ -195,26 +195,28 @@ def generate_one(base_image, requirements_file, index_url, filename,
             # Install necessary Python packages from pip requirements file
             # requirements files: http://bit.ly/pip-requirements-files
             ADD . /usr/src/app
-            RUN if [ -f requirements.apt ]; then \
-                    apt-get update; \
-                    DEBIAN_FRONTEND=noninteractive xargs apt-get -yq install < requirements.apt; \
-                fi
-            RUN if [ -f "{requirements_file}" ]; then \
-                    pip install {pip_options} -r {requirements_file}; \
-                fi
-            RUN if [ -f setup.py ]; then \
-                    pip install {pip_options} -e .; \
-                fi
-
+        """.format(base_image=base_image)))
+        if os.path.exists('requirements.apt'):
+            f.write(textwrap.dedent("""\
+                RUN apt-get update; DEBIAN_FRONTEND=noninteractive xargs apt-get -yq install < requirements.apt
+            """))
+        if os.path.exists(requirements_file):
+            f.write(textwrap.dedent("""\
+                RUN pip install {pip_options} -r {requirements_file}
+            """.format(requirements_file=requirements_file,
+                       pip_options=pip_options)))
+        if os.path.exists('setup.py'):
+            f.write(textwrap.dedent("""\
+                RUN pip install {pip_options} -e .
+            """.format(pip_options=pip_options)))
+        f.write(textwrap.dedent("""
             # This is so one can mount a volume from the host to give the
             # container access to the host's current working directory. E.g.:
             #
             #   - `docker run -v $(pwd):/host` from command-line or ...
             #   - `volumes: [".:/host"]` in fig.yml
             WORKDIR /host
-        """.format(base_image=base_image,
-                   requirements_file=requirements_file,
-                   pip_options=pip_options)))
+        """))
         if entrypoint:
             f.write("\nENTRYPOINT %s\n" % entrypoint)
         if cmd:
